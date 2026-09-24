@@ -9,11 +9,11 @@ import torch.nn.functional as F
 
 import time
 
-# try:
-#     import cudnn
-# except ImportError:
-#     cudnn = None
-cudnn = None
+try:
+    import cudnn
+except ImportError:
+    cudnn = None
+# cudnn = None
 
 Timing = NamedTuple('timing', [('mean', float)])
 
@@ -25,22 +25,21 @@ from flash_attn.utils.benchmark import benchmark_forward, benchmark_backward, be
 from flash_attn.flash_attn_interface import flash_attn_func, flash_attn_varlen_func
 flash_attn_func_python = None
 flash_attn_varlen_func_python = None
-# try:
-#     from flash_attn_interface import flash_attn_func as flash_attn_func_v3
-#     from flash_attn_interface import flash_attn_varlen_func as flash_attn_varlen_func_v3
-# except ImportError:
-flash_attn_func_v3 = None
-flash_attn_varlen_func_v3 = None
+try:
+    from flash_attn_interface import flash_attn_func as flash_attn_func_v3
+    from flash_attn_interface import flash_attn_varlen_func as flash_attn_varlen_func_v3
+except ImportError:
+    flash_attn_func_v3 = None
+    flash_attn_varlen_func_v3 = None
 
 if torch.cuda.get_device_capability()[0] != 9:
     flash_attn_func_v3 = None
 # flash_attn_func_v3 = None
 
-# flash_attn_func = None
+flash_attn_func = None
 
 from triton.testing import do_bench
 
-print(flash_attn_func)
 def time_fwd(func, *args, repeats=30, verbose=True, desc="", **kwargs):
     # # Warmup
     # for _ in range(5):
@@ -261,10 +260,10 @@ for headdim in [128]:
     # headdim = 64
     # batch_size = 64
     # seqlen = 512
-    # nheads = 8
+    nheads = 8  # or:16
     # headdim = 128
-    # nheads_kv = nheads
-    nheads_kv = nheads // 4
+    nheads_kv = nheads
+    # nheads_kv = nheads // 4
     # nheads_kv = 1
     headdim_v = headdim
     # headdim_v = 512
@@ -273,8 +272,8 @@ for headdim in [128]:
 
     for batch_size, seqlen in bs_seqlen_vals:
         num_splits = 0
-        window_size = (-1, -1)
-        # window_size = (None, None)
+        # window_size = (-1, -1)
+        window_size = (None, None)
         window_size_fa = (-1, -1)
         # window_size = (seqlen // 2 - 1, 0)
         pack_gqa = None
